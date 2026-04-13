@@ -114,6 +114,8 @@ class SECEdgarFetcher:
                 "city": str(biz.get("city", "") or ""),
                 "state_or_country": state_or_country,
                 "zip_code": str(biz.get("zipCode", "") or ""),
+                # 'id' mirrors 'cik' — downstream code uses 'id' as the
+                # primary key while 'cik' is the SEC-specific identifier.
                 "id": str(entry.get("cik_str", "")),
             })
 
