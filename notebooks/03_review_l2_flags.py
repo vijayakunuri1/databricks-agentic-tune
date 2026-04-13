@@ -6,7 +6,7 @@
 # MAGIC For each record you can: **ACCEPT** the suggested correction, **REJECT** it, or **MANUAL_EDIT**.
 
 # COMMAND ----------
-dbutils.widgets.text("catalog", "main", "Catalog")
+dbutils.widgets.text("catalog", "workspace", "Catalog")
 dbutils.widgets.text("schema", "default", "Schema")
 dbutils.widgets.text("table_name", "customers", "Table Name")
 dbutils.widgets.text("primary_key", "id", "Primary Key")

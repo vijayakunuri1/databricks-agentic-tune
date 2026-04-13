@@ -19,7 +19,7 @@ if _project_root not in sys.path:
     sys.path.insert(0, _project_root)
 
 # COMMAND ----------
-dbutils.widgets.text("catalog", "main", "Catalog")
+dbutils.widgets.text("catalog", "workspace", "Catalog")
 dbutils.widgets.text("sec_edgar_schema", "sec_edgar", "SEC EDGAR Schema")
 dbutils.widgets.text("reference_schema", "reference", "Reference Schema")
 dbutils.widgets.text("company_limit", "500", "Companies to Fetch (start small, max ~10000)")

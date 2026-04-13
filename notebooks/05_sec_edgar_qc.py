@@ -29,7 +29,7 @@ if _project_root not in sys.path:
 os.environ.setdefault("DATABRICKS_HOST", "https://" + spark.conf.get("spark.databricks.workspaceUrl"))
 
 # COMMAND ----------
-dbutils.widgets.text("catalog", "main", "Catalog")
+dbutils.widgets.text("catalog", "workspace", "Catalog")
 dbutils.widgets.text("edgar_schema", "sec_edgar", "SEC EDGAR Schema")
 dbutils.widgets.text("reference_schema", "reference", "Reference Schema")
 dbutils.widgets.text("qc_schema", "qc_schema", "QC Schema")

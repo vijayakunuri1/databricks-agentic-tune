@@ -7,7 +7,7 @@
 # MAGIC **Run this once before the first pipeline execution.**
 
 # COMMAND ----------
-dbutils.widgets.text("catalog", "main", "Catalog")
+dbutils.widgets.text("catalog", "workspace", "Catalog")
 dbutils.widgets.text("schema", "qc_schema", "Schema")
 
 catalog = dbutils.widgets.get("catalog")

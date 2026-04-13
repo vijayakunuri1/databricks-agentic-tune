@@ -18,7 +18,7 @@ if _project_root not in sys.path:
     sys.path.insert(0, _project_root)
 
 # COMMAND ----------
-dbutils.widgets.text("catalog", "main", "Catalog")
+dbutils.widgets.text("catalog", "workspace", "Catalog")
 dbutils.widgets.text("schema", "default", "Schema")
 dbutils.widgets.text("table_name", "customers", "Table Name")
 dbutils.widgets.text("qc_checks", "null,format,duplicate,geo", "QC Checks")
