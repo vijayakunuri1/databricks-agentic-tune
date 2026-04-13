@@ -51,7 +51,7 @@ print("Downloading GeoNames US postal codes...")
 geo_index = GeonamesIndex.download(cache_path="/tmp/geonames_us.parquet")
 
 geo_sdf = spark.createDataFrame(geo_index._df)
-geo_sdf.write.format("delta").mode("overwrite").saveAsTable(f"{catalog}.{ref_schema}.us_postal_codes")
+geo_sdf.write.format("delta").mode("overwrite").option("overwriteSchema", "true").saveAsTable(f"{catalog}.{ref_schema}.us_postal_codes")
 
 print(f"GeoNames loaded: {geo_index._df.shape[0]:,} records → {catalog}.{ref_schema}.us_postal_codes")
 display(geo_sdf.limit(10))
@@ -75,7 +75,7 @@ companies_df = fetcher.fetch_companies(
 
 # Write to Delta
 companies_sdf = spark.createDataFrame(companies_df.astype(str).fillna(""))
-companies_sdf.write.format("delta").mode("overwrite").saveAsTable(f"{catalog}.{edgar_schema}.companies")
+companies_sdf.write.format("delta").mode("overwrite").option("overwriteSchema", "true").saveAsTable(f"{catalog}.{edgar_schema}.companies")
 
 print(f"SEC EDGAR loaded: {len(companies_df):,} companies → {catalog}.{edgar_schema}.companies")
 display(companies_sdf.select("name", "city", "state_or_country", "zip_code", "sic_description").limit(20))
