@@ -152,7 +152,7 @@ class SecretProvider:
             secret = client.secrets.get_secret(scope=scope, key=key)
             if secret and secret.value:
                 return str(secret.value)
-        except Exception as exc:
+        except Exception:
             # Suppress details — the error may reference secret names
             logger.debug("Databricks Secrets API read failed for %s/%s", scope, key)
 

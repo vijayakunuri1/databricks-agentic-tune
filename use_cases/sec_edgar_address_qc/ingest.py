@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import argparse
 import logging
-import os
 from pathlib import Path
 
 import pandas as pd
@@ -20,7 +19,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)-8s %(me
 DATA_DIR = Path("./data")
 
 
-def ingest_geonames(cache_path: str, spark=None, delta_table: str | None = None) -> "GeonamesIndex":
+def ingest_geonames(cache_path: str, spark=None, delta_table: str | None = None) -> "GeonamesIndex":  # noqa: F821
     from data_ingestion.geonames_fetcher import GeonamesIndex
 
     logger.info("Ingesting GeoNames US postal code data...")

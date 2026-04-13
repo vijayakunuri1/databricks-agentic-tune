@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Literal
 
 from configs.settings import ThresholdConfig
 from schemas.qc_results import QCIssue, SupportLevel

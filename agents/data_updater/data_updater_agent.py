@@ -82,10 +82,9 @@ class DataUpdaterAgent(BaseAgent):
             all_corrections = self._enrich_rationale(all_corrections)
 
         # Write to Delta
-        delta_version: int | None = None
         if self.delta_writer and table_fqn and not dry_run:
             try:
-                merged = self.delta_writer.merge_corrections(
+                self.delta_writer.merge_corrections(
                     table_fqn, all_corrections, primary_key, batch_id, run_id, dry_run=False
                 )
                 self.delta_writer.write_audit_log(

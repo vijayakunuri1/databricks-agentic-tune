@@ -33,7 +33,6 @@ from typing import Any
 from agents.orchestrator.orchestrator_agent import OrchestratorAgent
 from configs.settings import AppConfig, is_databricks
 from messaging.message_bus import MessageBus
-from schemas.qc_results import WorkflowResult
 
 logger = logging.getLogger(__name__)
 
@@ -227,7 +226,7 @@ class MCPOrchestratorAgent(OrchestratorAgent):
         _STATE_RE = re.compile(r"^[A-Za-z]{2}$")
         _DECISION_ALLOWED = frozenset({"ACCEPT", "REJECT", "DEFER"})
 
-        from mcp_server.pipeline_state import set_config, register_table
+        from mcp_server.pipeline_state import set_config
 
         try:
             # Validate per-tool inputs before dispatching.

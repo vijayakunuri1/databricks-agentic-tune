@@ -39,11 +39,10 @@ def load_geonames():
 
 def run_standard_pipeline(dry_run: bool = False):
     """Mode 1: classic 3-agent pipeline."""
-    import pandas as pd
     from pipelines.full_qc_pipeline import run_pipeline
 
     if not Path(EDGAR_CACHE).exists():
-        raise FileNotFoundError(f"SEC EDGAR cache not found. Run: python -m use_cases.sec_edgar_address_qc.ingest")
+        raise FileNotFoundError("SEC EDGAR cache not found. Run: python -m use_cases.sec_edgar_address_qc.ingest")
 
     geonames = load_geonames()
 

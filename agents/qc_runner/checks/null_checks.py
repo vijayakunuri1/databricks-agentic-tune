@@ -81,7 +81,6 @@ class NullCheckRunner:
         return issues
 
     def _run_pandas(self, df: Any, table_fqn: str, columns: list[str]) -> list[QCIssue]:
-        import pandas as pd
 
         issues: list[QCIssue] = []
         pk_col = self._detect_pk(list(df.columns))

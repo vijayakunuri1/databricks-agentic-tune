@@ -77,7 +77,7 @@ display(delta_df)
 # MAGIC %md ### Step 2 — Run the full 3-agent pipeline (dry_run=False so corrections are applied)
 
 # COMMAND ----------
-import mlflow, os, requests as _req
+import os, requests as _req
 _user    = spark.sql("SELECT current_user()").collect()[0][0]
 _exp_path = f"/Users/{_user}/agent-validation"
 _host    = os.environ.get("DATABRICKS_HOST", "").rstrip("/")
@@ -133,7 +133,7 @@ result = run_pipeline(
     mlflow_experiment_name="/Shared/agent-validation",
 )
 
-print(f"\nPipeline result:")
+print("\nPipeline result:")
 print(f"  total_records : {result.total_records}")
 print(f"  total_issues  : {result.total_issues}")
 print(f"  l1_corrected  : {result.l1_corrected}")
