@@ -12,6 +12,7 @@ Reference:
 from __future__ import annotations
 
 import logging
+import os
 import time
 from pathlib import Path
 from typing import Any
@@ -24,7 +25,11 @@ logger = logging.getLogger(__name__)
 _COMPANY_TICKERS_URL = "https://www.sec.gov/files/company_tickers.json"
 _SUBMISSIONS_URL = "https://data.sec.gov/submissions/CIK{cik}.json"
 _REQUEST_DELAY = 0.12  # ~8 req/s to stay under the 10 req/s limit
-_USER_AGENT = "databricks-agentic-tune/1.0 (SEC EDGAR research)"
+
+# SEC EDGAR fair-access policy requires a User-Agent with a contact email.
+# Override via the SEC_EDGAR_USER_AGENT environment variable.
+_DEFAULT_USER_AGENT = "databricks-agentic-tune/1.0 support@databricks.com"
+_USER_AGENT = os.environ.get("SEC_EDGAR_USER_AGENT", _DEFAULT_USER_AGENT)
 
 
 class SECEdgarFetcher:
