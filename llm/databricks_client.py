@@ -27,6 +27,16 @@ class DatabricksLLMClient:
         host = config.workspace_host or os.getenv("DATABRICKS_HOST", "")
         token = config.token or os.getenv("DATABRICKS_TOKEN", "")
 
+        # Try loading from the Databricks Secrets scope (user-configured)
+        if not host or not token:
+            try:
+                from configs.secrets import get_secret_provider, DEFAULT_SCOPE
+                sp = get_secret_provider()
+                host = host or sp.get(DEFAULT_SCOPE, "DATABRICKS_HOST")
+                token = token or sp.get(DEFAULT_SCOPE, "DATABRICKS_TOKEN")
+            except Exception as exc:
+                logger.debug("Failed to retrieve credentials from Secrets scope: %s", type(exc).__name__)
+
         # On Databricks clusters the SDK auto-discovers host + token from the
         # cluster's built-in credential store — no env vars or secrets needed.
         if not host or not token:

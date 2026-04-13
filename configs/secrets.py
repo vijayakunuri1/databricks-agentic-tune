@@ -36,10 +36,10 @@ DEFAULT_SCOPE = "qc-secrets"
 # Canonical map: env-var name → (scope, key) on Databricks.
 # Used by validate_all() to check every required secret at startup.
 _SECRET_MAP: dict[str, tuple[str, str]] = {
-    "ANTHROPIC_API_KEY": (DEFAULT_SCOPE, "ANTHROPIC_API_KEY"),
-    "MCP_API_KEY":       (DEFAULT_SCOPE, "MCP_API_KEY"),
-    # DATABRICKS_HOST / DATABRICKS_TOKEN are auto-injected on clusters;
-    # only needed locally.
+    "ANTHROPIC_API_KEY":  (DEFAULT_SCOPE, "ANTHROPIC_API_KEY"),
+    "MCP_API_KEY":        (DEFAULT_SCOPE, "MCP_API_KEY"),
+    "DATABRICKS_HOST":    (DEFAULT_SCOPE, "DATABRICKS_HOST"),
+    "DATABRICKS_TOKEN":   (DEFAULT_SCOPE, "DATABRICKS_TOKEN"),
 }
 
 _LOCAL_REQUIRED = ["DATABRICKS_HOST", "DATABRICKS_TOKEN", "ANTHROPIC_API_KEY", "MCP_API_KEY"]

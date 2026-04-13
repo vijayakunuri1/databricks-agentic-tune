@@ -96,12 +96,13 @@ class ClaudeConfig:
 class DatabricksLLMConfig:
     """Used when running on Databricks — token is injected automatically."""
     workspace_host: str = field(
-        default_factory=lambda: os.getenv("DATABRICKS_HOST", os.getenv("DB_WORKSPACE_URL", ""))
+        default_factory=lambda: _secret("DATABRICKS_HOST", "DATABRICKS_HOST")
+        or os.getenv("DB_WORKSPACE_URL", "")
     )
-    # Token is auto-injected by the Databricks runtime on clusters/serverless.
-    # For local use, load from env var (never from Databricks Secrets — the SDK
-    # handles local auth via ~/.databrickscfg).
-    token: str = field(default_factory=lambda: os.getenv("DATABRICKS_TOKEN", ""))
+    # Token resolution: Databricks Secrets scope → env var → SDK auto-discovery.
+    token: str = field(
+        default_factory=lambda: _secret("DATABRICKS_TOKEN", "DATABRICKS_TOKEN")
+    )
     model: str = field(
         default_factory=lambda: os.getenv(
             "DATABRICKS_LLM_MODEL", "databricks-meta-llama-3-3-70b-instruct"
@@ -156,12 +157,14 @@ def get_databricks_token() -> str:
     Return the Databricks bearer token for REST API calls.
 
     Resolution order (first non-empty wins):
-    1. DATABRICKS_TOKEN env var (auto-injected on standard clusters; set locally via .env)
-    2. Databricks SDK auto-discovery (works in serverless / notebooks without env var)
+    1. Databricks Secrets scope (``qc-secrets/DATABRICKS_TOKEN``)
+    2. ``DATABRICKS_TOKEN`` env var (auto-injected on standard clusters; set locally via .env)
+    3. Databricks SDK auto-discovery (works in serverless / notebooks without env var)
 
     Never logs or raises on the token value — callers get "" if unavailable.
     """
-    token = os.getenv("DATABRICKS_TOKEN", "")
+    # _secret checks secrets scope first, then env var
+    token = _secret("DATABRICKS_TOKEN", "DATABRICKS_TOKEN")
     if token:
         return token
     if is_databricks():
