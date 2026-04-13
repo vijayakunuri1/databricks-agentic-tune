@@ -44,6 +44,11 @@ dry_run       = dbutils.widgets.get("dry_run") == "true"
 mlflow_exp    = dbutils.widgets.get("mlflow_experiment")
 
 # COMMAND ----------
+# Ensure the QC schema exists (needed when this notebook runs standalone
+# without the setup_tables task executing first).
+spark.sql(f"CREATE SCHEMA IF NOT EXISTS {catalog}.{qc_schema}")
+
+# COMMAND ----------
 # MAGIC %md ### Step 1 — Load GeoNames index into memory
 
 # COMMAND ----------
