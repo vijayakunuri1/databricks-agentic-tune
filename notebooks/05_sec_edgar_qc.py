@@ -32,12 +32,14 @@ os.environ.setdefault("DATABRICKS_HOST", "https://" + spark.conf.get("spark.data
 dbutils.widgets.text("catalog", "main", "Catalog")
 dbutils.widgets.text("edgar_schema", "sec_edgar", "SEC EDGAR Schema")
 dbutils.widgets.text("reference_schema", "reference", "Reference Schema")
+dbutils.widgets.text("qc_schema", "qc_schema", "QC Schema")
 dbutils.widgets.dropdown("dry_run", "true", ["true", "false"], "Dry Run")
 dbutils.widgets.text("mlflow_experiment", "/Shared/SEC-EDGAR-QC", "MLflow Experiment")
 
 catalog       = dbutils.widgets.get("catalog")
 edgar_schema  = dbutils.widgets.get("edgar_schema")
 ref_schema    = dbutils.widgets.get("reference_schema")
+qc_schema     = dbutils.widgets.get("qc_schema")
 dry_run       = dbutils.widgets.get("dry_run") == "true"
 mlflow_exp    = dbutils.widgets.get("mlflow_experiment")
 
@@ -82,6 +84,12 @@ if _exp_id:
     print(f"MLflow experiment: {_exp_path}  (id={_exp_id})")
 
 from pipelines.full_qc_pipeline import run_pipeline
+from configs.settings import get_config
+import copy
+
+cfg = copy.deepcopy(get_config())
+cfg.tables.catalog = catalog
+cfg.tables.schema = qc_schema
 
 result = run_pipeline(
     table_catalog=catalog,
@@ -93,6 +101,7 @@ result = run_pipeline(
     dry_run=dry_run,
     spark=spark,
     geonames_index=geonames_index,
+    config=cfg,
 )
 
 # COMMAND ----------

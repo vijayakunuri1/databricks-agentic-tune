@@ -106,6 +106,7 @@ resources:
               catalog: "${var.catalog}"
               edgar_schema: "${var.edgar_schema}"
               reference_schema: "${var.reference_schema}"
+              qc_schema: "${var.qc_schema}"
               dry_run: "${var.dry_run}"
               mlflow_experiment: "/Shared/SEC-EDGAR-QC"
           environment_key: qc_env
@@ -212,6 +213,7 @@ resources:
               catalog: "${var.catalog}"
               edgar_schema: "${var.edgar_schema}"
               reference_schema: "${var.reference_schema}"
+              qc_schema: "${var.qc_schema}"
               dry_run: "${var.dry_run}"
               mlflow_experiment: "/Shared/SEC-EDGAR-QC"
           environment_key: qc_env
