@@ -52,7 +52,7 @@ jobs:
 
       - name: Run unit tests
         run: |
-          pytest tests/ -v --tb=short || true
+          pytest tests/ -v --tb=short
 
       - name: Install Databricks CLI
         uses: databricks/setup-cli@main

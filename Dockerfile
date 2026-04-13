@@ -38,6 +38,7 @@ ENV PORT=8000
 ENV LOG_LEVEL=info
 ENV WORKERS=1
 
+# /health endpoint is defined in mcp_server/server.py (exempt from auth)
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
 
