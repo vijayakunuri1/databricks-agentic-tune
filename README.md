@@ -178,6 +178,51 @@ Every pipeline run logs to MLflow:
 - `llm_calls`, `llm_total_tokens`
 - `pipeline_duration_seconds`
 
+## CI/CD Deployment
+
+This project uses GitHub Actions for automated deployment via Databricks Asset Bundles.
+
+### Prerequisites
+
+Set these GitHub repository secrets:
+
+| Secret | Description |
+|--------|-------------|
+| `DATABRICKS_HOST` | Databricks workspace URL (e.g. `https://dbc-xxx.cloud.databricks.com`) |
+| `DATABRICKS_TOKEN` | Databricks personal access token or service principal token |
+
+### Deployment Workflow
+
+| Trigger | Action |
+|---------|--------|
+| Push to `main` | Validates bundle and deploys to **dev** |
+| Pull request to `main` | Validates bundle only (no deploy) |
+| Manual dispatch (dev) | Validates and deploys to **dev** |
+| Manual dispatch (prod) | Validates and deploys to **prod** |
+
+```bash
+# Manual deployment via CLI
+databricks bundle deploy --target dev    # deploy to dev
+databricks bundle deploy --target prod   # deploy to prod
+
+# Run the pipeline after deployment
+databricks bundle run data_qc_pipeline --target dev
+```
+
+### MCP Server (Docker)
+
+```bash
+# Build
+docker build -t qc-mcp-server .
+
+# Run (behind a proxy/load balancer)
+docker run -d \
+  -e MCP_API_KEY="$(python -c 'import secrets; print(secrets.token_hex(32))')" \
+  -e PROXY_MODE=true \
+  -p 8000:8000 \
+  qc-mcp-server
+```
+
 ## Dependencies
 
 - **PySpark / Delta Lake** — data processing and storage

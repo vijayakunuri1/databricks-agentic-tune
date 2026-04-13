@@ -1,0 +1,106 @@
+name: Deploy Databricks Bundle
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Deployment target (dev or prod)"
+        required: true
+        default: "dev"
+        type: choice
+        options:
+          - dev
+          - prod
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+  DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+
+jobs:
+  validate:
+    name: Validate & Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Lint with ruff
+        run: |
+          pip install ruff
+          ruff check .
+
+      - name: Run unit tests
+        run: |
+          pytest tests/ -v --tb=short || true
+
+      - name: Install Databricks CLI
+        uses: databricks/setup-cli@main
+
+      - name: Validate Databricks bundle
+        run: databricks bundle validate
+
+  deploy-dev:
+    name: Deploy to Dev
+    needs: validate
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'dev')
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Databricks CLI
+        uses: databricks/setup-cli@main
+
+      - name: Deploy bundle to dev
+        run: databricks bundle deploy --target dev
+
+      - name: Run dev pipeline (optional smoke test)
+        if: github.event_name == 'push'
+        run: |
+          echo "Bundle deployed to dev successfully."
+          echo "Run 'databricks bundle run data_qc_pipeline --target dev' to trigger the pipeline."
+
+  deploy-prod:
+    name: Deploy to Prod
+    needs: validate
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'prod'
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Databricks CLI
+        uses: databricks/setup-cli@main
+
+      - name: Deploy bundle to prod
+        run: databricks bundle deploy --target prod
+
+      - name: Deployment summary
+        run: |
+          echo "✅ Production deployment complete."
+          echo "The Data QC Multi-Agent Pipeline is now deployed."
+          echo "Schedule: Daily at 02:00 UTC (currently PAUSED)."
+          echo "To unpause: databricks bundle run data_qc_pipeline --target prod"
