@@ -19,8 +19,11 @@ spark.sql(f"CREATE SCHEMA IF NOT EXISTS {catalog}.{schema}")
 
 # COMMAND ----------
 # QC Audit Log table
+# Use CREATE OR REPLACE so schema changes (e.g. column type fixes) are applied
+# without needing a manual DROP. Safe because this is an append-only audit log
+# that is repopulated by pipeline runs.
 spark.sql(f"""
-CREATE TABLE IF NOT EXISTS {catalog}.{schema}.qc_audit_log (
+CREATE OR REPLACE TABLE {catalog}.{schema}.qc_audit_log (
     audit_id        STRING NOT NULL,
     run_id          STRING NOT NULL,
     batch_id        STRING NOT NULL,
