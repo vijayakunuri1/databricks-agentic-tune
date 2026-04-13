@@ -70,6 +70,9 @@ workspace:
 
 resources:
   jobs:
+    # -----------------------------------------------------------------
+    # Full orchestrated pipeline (all tasks in dependency order)
+    # -----------------------------------------------------------------
     data_qc_pipeline:
       name: "Data QC Multi-Agent Pipeline"
 
@@ -162,6 +165,122 @@ resources:
           - vijaymohan.akunuri@gmail.com
         on_success:
           - vijaymohan.akunuri@gmail.com
+
+    # -----------------------------------------------------------------
+    # Standalone jobs — run individual tasks from the failure point
+    # -----------------------------------------------------------------
+    # Usage:
+    #   databricks bundle run ingest_public_data --target dev
+    #   databricks bundle run run_qc_pipeline --target dev
+    #   databricks bundle run agent_validation --target dev
+    #   databricks bundle run mcp_interactive --target dev
+
+    ingest_public_data:
+      name: "QC · Ingest Public Data (standalone)"
+      tasks:
+        - task_key: ingest_public_data
+          notebook_task:
+            notebook_path: ./notebooks/04_ingest_public_data.py
+            base_parameters:
+              catalog: "${var.catalog}"
+              sec_edgar_schema: "${var.edgar_schema}"
+              reference_schema: "${var.reference_schema}"
+              company_limit: "500"
+          environment_key: qc_env
+      environments:
+        - environment_key: qc_env
+          spec:
+            client: "2"
+            dependencies:
+              - "rapidfuzz>=3.9.0"
+              - "geopy>=2.4.1"
+              - "usaddress>=0.5.10"
+              - "openai>=1.30.0"
+              - "requests>=2.32.0"
+              - "fastmcp>=2.0.0"
+              - "pydantic>=2.7.0"
+              - "python-dotenv>=1.0.0"
+              - "pyyaml>=6.0.1"
+
+    run_qc_pipeline:
+      name: "QC · Run QC Pipeline (standalone)"
+      tasks:
+        - task_key: run_qc_pipeline
+          notebook_task:
+            notebook_path: ./notebooks/05_sec_edgar_qc.py
+            base_parameters:
+              catalog: "${var.catalog}"
+              edgar_schema: "${var.edgar_schema}"
+              reference_schema: "${var.reference_schema}"
+              dry_run: "${var.dry_run}"
+              mlflow_experiment: "/Shared/SEC-EDGAR-QC"
+          environment_key: qc_env
+      environments:
+        - environment_key: qc_env
+          spec:
+            client: "2"
+            dependencies:
+              - "rapidfuzz>=3.9.0"
+              - "geopy>=2.4.1"
+              - "usaddress>=0.5.10"
+              - "openai>=1.30.0"
+              - "requests>=2.32.0"
+              - "fastmcp>=2.0.0"
+              - "pydantic>=2.7.0"
+              - "python-dotenv>=1.0.0"
+              - "pyyaml>=6.0.1"
+
+    agent_validation:
+      name: "QC · Agent Validation (standalone)"
+      tasks:
+        - task_key: agent_validation
+          notebook_task:
+            notebook_path: ./notebooks/07_agent_validation.py
+            base_parameters:
+              catalog: "${var.catalog}"
+              schema: "${var.qc_schema}"
+          environment_key: qc_env
+      environments:
+        - environment_key: qc_env
+          spec:
+            client: "2"
+            dependencies:
+              - "rapidfuzz>=3.9.0"
+              - "geopy>=2.4.1"
+              - "usaddress>=0.5.10"
+              - "openai>=1.30.0"
+              - "requests>=2.32.0"
+              - "fastmcp>=2.0.0"
+              - "pydantic>=2.7.0"
+              - "python-dotenv>=1.0.0"
+              - "pyyaml>=6.0.1"
+
+    mcp_interactive:
+      name: "QC · MCP Interactive (standalone)"
+      tasks:
+        - task_key: mcp_interactive
+          notebook_task:
+            notebook_path: ./notebooks/06_mcp_interactive_qc.py
+            base_parameters:
+              catalog: "${var.catalog}"
+              edgar_schema: "${var.edgar_schema}"
+              reference_schema: "${var.reference_schema}"
+              mode: "tool_use"
+          environment_key: qc_env
+      environments:
+        - environment_key: qc_env
+          spec:
+            client: "2"
+            dependencies:
+              - "rapidfuzz>=3.9.0"
+              - "geopy>=2.4.1"
+              - "usaddress>=0.5.10"
+              - "openai>=1.30.0"
+              - "requests>=2.32.0"
+              - "fastmcp>=2.0.0"
+              - "pydantic>=2.7.0"
+              - "python-dotenv>=1.0.0"
+              - "pyyaml>=6.0.1"
 
 targets:
   dev:
