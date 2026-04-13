@@ -126,7 +126,6 @@ class QCRunnerAgent(BaseAgent):
     _LOCAL_DATA_ROOTS: tuple[str, ...] = ("/tmp", "/dbfs/tmp")
 
     def _load_data(self, req: dict) -> Any:
-        import os
 
         catalog = req["table_catalog"]
         schema = req["table_schema"]

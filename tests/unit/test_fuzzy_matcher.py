@@ -1,5 +1,4 @@
 """Unit tests for FuzzyMatcher."""
-import pytest
 from agents.data_updater.fuzzy_matcher import FuzzyMatcher
 
 CITIES = ["New York", "Los Angeles", "Chicago", "Houston", "Phoenix", "Atlanta", "Denver", "Boston", "Miami", "Seattle"]

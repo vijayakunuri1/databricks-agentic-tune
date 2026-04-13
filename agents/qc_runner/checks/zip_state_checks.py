@@ -41,7 +41,6 @@ class ZipStateMismatchChecker:
         return self._run_pandas(df, table_fqn)
 
     def _run_pandas(self, df: Any, table_fqn: str) -> list[QCIssue]:
-        import pandas as pd
 
         issues: list[QCIssue] = []
         pk_col = self._detect_pk(list(df.columns))

@@ -13,7 +13,6 @@ dbutils.widgets.text("primary_key", "id", "Primary Key")
 dbutils.widgets.text("reviewer", "", "Your Username (auto-filled if blank)")
 
 # COMMAND ----------
-from pyspark.sql import functions as F
 from delta.tables import DeltaTable
 from datetime import datetime
 from configs.input_validation import (

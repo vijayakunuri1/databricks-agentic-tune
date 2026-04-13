@@ -56,7 +56,7 @@ print(f"GeoNames ready: {len(geonames_index._zip_to_primary):,} ZIPs indexed acr
 # MAGIC %md ### Step 2 — Run QC Pipeline
 
 # COMMAND ----------
-import mlflow, os, requests as _req
+import os, requests as _req
 _user    = spark.sql("SELECT current_user()").collect()[0][0]
 _exp_path = f"/Users/{_user}/SEC-EDGAR-QC"
 _host    = os.environ.get("DATABRICKS_HOST", "").rstrip("/")
@@ -137,7 +137,6 @@ if _exp_id and _host and _token:
 # MAGIC %md ### Step 3 — Explore QC Results
 
 # COMMAND ----------
-from pyspark.sql import functions as F
 
 companies = spark.table(f"{catalog}.{edgar_schema}.companies")
 _has_qc_cols = "qc_status" in companies.columns

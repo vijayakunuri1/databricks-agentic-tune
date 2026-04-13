@@ -1,0 +1,6 @@
+# Ruff configuration for Databricks multi-agent project
+
+[lint.per-file-ignores]
+# Databricks notebooks use pre-defined globals (dbutils, spark, display)
+# and interleave imports between `# COMMAND ----------` cells.
+"notebooks/*.py" = ["F821", "E402", "E401"]

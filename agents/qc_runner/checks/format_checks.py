@@ -54,7 +54,6 @@ class FormatCheckRunner:
         return self._run_pandas(df, table_fqn, target_columns)
 
     def _run_pandas(self, df: Any, table_fqn: str, target_columns: list[str] | None) -> list[QCIssue]:
-        import pandas as pd
 
         issues: list[QCIssue] = []
         columns = target_columns or list(df.columns)

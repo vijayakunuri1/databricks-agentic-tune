@@ -162,7 +162,8 @@ class GeoCheckRunner:
     @staticmethod
     def _load_qc_rules(config: Any) -> dict:
         try:
-            import yaml, os
+            import yaml
+            import os
             path = os.path.join(os.path.dirname(__file__), "../../../configs/qc_rules.yaml")
             with open(os.path.abspath(path)) as f:
                 return yaml.safe_load(f) or {}

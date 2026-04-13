@@ -118,7 +118,7 @@ def run_pipeline(
     from agents.data_updater.data_updater_agent import DataUpdaterAgent
     from agents.orchestrator.orchestrator_agent import OrchestratorAgent
 
-    qc_runner = QCRunnerAgent(
+    _qc_runner = QCRunnerAgent(
         agent_id="qc_runner_1",
         config=cfg,
         message_bus=bus,
@@ -126,7 +126,7 @@ def run_pipeline(
         geonames_index=geonames_index,
     )
 
-    data_updater = DataUpdaterAgent(
+    _data_updater = DataUpdaterAgent(
         agent_id="data_updater_1",
         config=cfg,
         message_bus=bus,

@@ -5,7 +5,6 @@ Mocks out the Anthropic API and Delta writes so no external services are needed.
 from __future__ import annotations
 
 import pytest
-from unittest.mock import MagicMock, patch
 
 
 @pytest.fixture
