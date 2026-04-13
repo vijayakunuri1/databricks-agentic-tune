@@ -87,7 +87,40 @@ class DeltaWriter:
                 "qc_human_reviewer": None,
             })
 
-        updates_df = self.spark.createDataFrame(pd.DataFrame(rows))
+        # Deduplicate: a record may have multiple issues (e.g. null city + bad zip).
+        # MERGE requires at most one source row per target key.  Keep the row with
+        # the highest priority (lowest qc_confidence_score = most severe) and merge
+        # all issues into qc_all_issues as a JSON array.
+        from collections import defaultdict
+        grouped: dict[str, list[dict]] = defaultdict(list)
+        for r in rows:
+            grouped[r[primary_key]].append(r)
+
+        deduped_rows = []
+        for rec_id, rec_rows in grouped.items():
+            if len(rec_rows) == 1:
+                deduped_rows.append(rec_rows[0])
+            else:
+                # Merge all issues into a JSON array
+                all_issues = []
+                for rr in rec_rows:
+                    issue_data = json.loads(rr["qc_all_issues"])
+                    issue_data["column"] = rr["qc_corrected_column"]
+                    issue_data["original"] = rr["qc_original_value"]
+                    issue_data["corrected"] = rr["qc_corrected_value"]
+                    issue_data["method"] = rr["qc_correction_method"]
+                    all_issues.append(issue_data)
+                # Pick the most significant row: prefer NEEDS_REVIEW over AUTO_CORRECTED,
+                # then lowest confidence (most uncertain = most important to surface).
+                rec_rows.sort(key=lambda r: (
+                    0 if r["qc_status"] == "NEEDS_REVIEW" else 1,
+                    r["qc_confidence_score"],
+                ))
+                winner = rec_rows[0].copy()
+                winner["qc_all_issues"] = json.dumps(all_issues)
+                deduped_rows.append(winner)
+
+        updates_df = self.spark.createDataFrame(pd.DataFrame(deduped_rows))
         # Build a safe temp view name: batch_id is already validated to contain
         # only [a-zA-Z0-9_\-]; replace hyphens so the name is a valid SQL identifier.
         safe_view_suffix = batch_id.replace("-", "_")
