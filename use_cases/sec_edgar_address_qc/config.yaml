@@ -1,0 +1,49 @@
+# SEC EDGAR Address QC Use Case Configuration
+
+source_table:
+  catalog: main
+  schema: sec_edgar
+  table: companies
+  primary_key: id       # = cik (as string)
+
+reference_tables:
+  catalog: main
+  schema: reference
+  geonames_table: us_postal_codes
+
+qc_checks:
+  - null
+  - format
+  - duplicate
+  - zip_state_mismatch  # uses GeoNames as reference
+
+# Column mapping: how SEC EDGAR columns map to our standard QC field names
+column_mapping:
+  street: street1
+  city: city
+  state: state_or_country
+  zip: zip_code
+  country: country
+
+# Which columns to treat as critical (nulls = critical severity)
+critical_columns:
+  - cik
+  - name
+  - city
+  - state_or_country
+  - zip_code
+
+# QC thresholds (override global defaults for this use case)
+thresholds:
+  l1_auto_correct: 0.88   # slightly higher bar for business data
+  l2_review_lower: 0.55
+
+# SEC EDGAR fetch settings
+sec_edgar:
+  company_limit: 500      # fetch 500 companies for demo; set to 5000+ for full dataset
+  us_only: true
+  cache_path: ./data/sec_edgar_companies.parquet
+
+# GeoNames settings
+geonames:
+  cache_path: ./data/geonames_us_postal.parquet

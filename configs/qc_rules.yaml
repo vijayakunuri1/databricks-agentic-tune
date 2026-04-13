@@ -1,0 +1,48 @@
+null_checks:
+  enabled: true
+  columns: "__all__"
+  critical_columns:
+    - customer_id
+    - address_line1
+    - city
+    - state
+    - zip_code
+
+format_checks:
+  enabled: true
+  rules:
+    - column_pattern: ".*email.*"
+      format: "email"
+      regex: '^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$'
+    - column_pattern: ".*phone.*"
+      format: "phone_us"
+      regex: '^(\+?1[-.\s]?)?\(?[0-9]{3}\)?[-.\s]?[0-9]{3}[-.\s]?[0-9]{4}$'
+    - column_pattern: ".*zip.*|.*postal.*"
+      format: "zip_us"
+      regex: '^[0-9]{5}(-[0-9]{4})?$'
+    - column_pattern: ".*date.*|.*_at$|.*_on$"
+      format: "iso_date"
+      regex: '^[0-9]{4}-[0-9]{2}-[0-9]{2}.*$'
+
+duplicate_checks:
+  enabled: true
+  dedup_key_columns:
+    - customer_id
+    - address_line1
+    - zip_code
+  fuzzy_dedup:
+    enabled: true
+    threshold: 0.92
+    columns_to_compare:
+      - address_line1
+
+geo_checks:
+  enabled: true
+  address_columns:
+    street: "address_line1"
+    city: "city"
+    state: "state"
+    zip: "zip_code"
+    country: "country"
+  geocoder: "nominatim"
+  cache_geocode_results: true

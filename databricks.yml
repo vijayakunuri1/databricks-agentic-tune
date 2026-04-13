@@ -1,0 +1,176 @@
+bundle:
+  name: databricks-agentic-qc
+
+# ---------------------------------------------------------------------------
+# Secrets (Databricks Secrets API)
+# ---------------------------------------------------------------------------
+# Create the scope and populate secrets once, before deploying:
+#
+#   databricks secrets create-scope qc-secrets
+#   databricks secrets put-secret qc-secrets ANTHROPIC_API_KEY --string-value sk-ant-...
+#   databricks secrets put-secret qc-secrets MCP_API_KEY        --string-value $(python -c "import secrets; print(secrets.token_hex(32))")
+#
+# Grant the job service principal read access to the scope:
+#   databricks secrets put-acl qc-secrets <service-principal-name> READ
+#
+# The application reads secrets via configs.secrets.SecretProvider.
+# No secret ever appears in environment variables, log output, or bundle variables.
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Unity Catalog grants
+# ---------------------------------------------------------------------------
+# After deploying, run these SQL statements in a Databricks SQL warehouse
+# to lock down direct table access.  Replace <sp-name> with your job
+# service principal's application ID or display name.
+#
+# -- Allow the job to read/write only within its own schemas
+# GRANT USE CATALOG ON CATALOG workspace TO `<sp-name>`;
+# GRANT USE SCHEMA  ON SCHEMA workspace.sec_edgar   TO `<sp-name>`;
+# GRANT USE SCHEMA  ON SCHEMA workspace.qc_schema   TO `<sp-name>`;
+# GRANT USE SCHEMA  ON SCHEMA workspace.reference   TO `<sp-name>`;
+# GRANT SELECT, MODIFY ON TABLE workspace.sec_edgar.companies  TO `<sp-name>`;
+# GRANT SELECT, MODIFY ON TABLE workspace.qc_schema.qc_audit_log TO `<sp-name>`;
+# GRANT SELECT, MODIFY ON TABLE workspace.qc_schema.geocode_cache TO `<sp-name>`;
+# GRANT SELECT ON ALL TABLES IN SCHEMA workspace.reference       TO `<sp-name>`;
+#
+# Deny direct access from the public internet:
+# -- Databricks IP access lists restrict which source IPs can reach the workspace API.
+# -- Enable via: Account Console → Security → IP Access Lists.
+# -- Only allow your corporate egress IPs and the CI/CD runner IPs.
+#
+# MCP HTTP server network isolation:
+# -- Deploy the MCP server (mcp_server/server.py) inside the Databricks private network
+#    or a VPC peered to your Databricks workspace, never on a public IP without TLS.
+# -- Set MCP_ALLOWED_IPS to restrict which IPs may call the /mcp endpoint.
+# ---------------------------------------------------------------------------
+
+variables:
+  catalog:
+    description: Unity Catalog catalog name
+    default: workspace
+  edgar_schema:
+    description: Schema for SEC EDGAR data
+    default: sec_edgar
+  reference_schema:
+    description: Schema for GeoNames reference data
+    default: reference
+  qc_schema:
+    description: Schema for QC audit tables
+    default: qc_schema
+  table_name:
+    description: Source table to run QC on
+    default: companies
+  dry_run:
+    description: "true = run checks but skip writes"
+    default: "false"
+
+workspace:
+  host: https://dbc-707cbb65-e692.cloud.databricks.com
+
+resources:
+  jobs:
+    data_qc_pipeline:
+      name: "Data QC Multi-Agent Pipeline"
+
+      tasks:
+        - task_key: setup_tables
+          notebook_task:
+            notebook_path: ./notebooks/01_setup_tables.py
+            base_parameters:
+              catalog: "${var.catalog}"
+              schema: "${var.qc_schema}"
+          environment_key: qc_env
+
+        - task_key: ingest_public_data
+          depends_on:
+            - task_key: setup_tables
+          notebook_task:
+            notebook_path: ./notebooks/04_ingest_public_data.py
+            base_parameters:
+              catalog: "${var.catalog}"
+              sec_edgar_schema: "${var.edgar_schema}"
+              reference_schema: "${var.reference_schema}"
+              company_limit: "500"
+          environment_key: qc_env
+
+        - task_key: run_qc_pipeline
+          depends_on:
+            - task_key: ingest_public_data
+          notebook_task:
+            notebook_path: ./notebooks/05_sec_edgar_qc.py
+            base_parameters:
+              catalog: "${var.catalog}"
+              edgar_schema: "${var.edgar_schema}"
+              reference_schema: "${var.reference_schema}"
+              dry_run: "${var.dry_run}"
+              mlflow_experiment: "/Shared/SEC-EDGAR-QC"
+          environment_key: qc_env
+
+        - task_key: agent_validation
+          depends_on:
+            - task_key: ingest_public_data
+          notebook_task:
+            notebook_path: ./notebooks/07_agent_validation.py
+            base_parameters:
+              catalog: "${var.catalog}"
+              schema: "${var.qc_schema}"
+          environment_key: qc_env
+
+        - task_key: mcp_interactive
+          depends_on:
+            - task_key: run_qc_pipeline
+          notebook_task:
+            notebook_path: ./notebooks/06_mcp_interactive_qc.py
+            base_parameters:
+              catalog: "${var.catalog}"
+              edgar_schema: "${var.edgar_schema}"
+              reference_schema: "${var.reference_schema}"
+              mode: "tool_use"
+          environment_key: qc_env
+
+      environments:
+        - environment_key: qc_env
+          spec:
+            client: "2"
+            dependencies:
+              - "rapidfuzz>=3.9.0"
+              - "geopy>=2.4.1"
+              - "usaddress>=0.5.10"
+              - "openai>=1.30.0"
+              - "requests>=2.32.0"
+              - "fastmcp>=2.0.0"
+              - "pydantic>=2.7.0"
+              - "python-dotenv>=1.0.0"
+              - "pyyaml>=6.0.1"
+
+      parameters:
+        - name: catalog
+          default: "${var.catalog}"
+        - name: table_name
+          default: "${var.table_name}"
+        - name: dry_run
+          default: "${var.dry_run}"
+
+      schedule:
+        quartz_cron_expression: "0 0 2 * * ?"
+        timezone_id: "UTC"
+        pause_status: PAUSED
+
+      email_notifications:
+        on_failure:
+          - vijaymohan.akunuri@gmail.com
+        on_success:
+          - vijaymohan.akunuri@gmail.com
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://dbc-707cbb65-e692.cloud.databricks.com
+
+  prod:
+    mode: production
+    workspace:
+      host: https://dbc-707cbb65-e692.cloud.databricks.com

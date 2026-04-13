@@ -1,0 +1,47 @@
+# Secrets — never commit these
+.env
+*.env
+.env.*
+!.env.example
+
+# Credentials
+*.pem
+*.key
+*.p12
+*.pfx
+*.token
+databricks.token
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Databricks
+.databricks/
+
+# MLflow — local run artifacts contain usernames, paths, and run metadata
+mlruns/
+mlruns_test/
+mlruns*/
+
+# Local data cache — may contain downloaded datasets (SEC EDGAR, GeoNames)
+data/
+*.parquet
+*.csv.bak
+/tmp/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
