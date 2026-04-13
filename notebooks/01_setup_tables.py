@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS {catalog}.{schema}.qc_audit_log (
     check_type      STRING NOT NULL,
     original_value  STRING,
     corrected_value STRING,
-    confidence_score FLOAT,
+    confidence_score DOUBLE,
     support_level   STRING,
     was_applied     BOOLEAN,
     correction_method STRING,

@@ -195,6 +195,7 @@ class DeltaWriter:
             for c in corrections
         ]
 
-        log_df = self.spark.createDataFrame(pd.DataFrame(rows))
+        from schemas.delta_tables import QC_AUDIT_LOG_SCHEMA
+        log_df = self.spark.createDataFrame(pd.DataFrame(rows), schema=QC_AUDIT_LOG_SCHEMA)
         log_df.write.format("delta").mode("append").saveAsTable(audit_log_table)
         logger.info("Wrote %d rows to audit log %s", len(rows), audit_log_table)

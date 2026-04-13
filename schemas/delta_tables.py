@@ -4,6 +4,7 @@ from __future__ import annotations
 try:
     from pyspark.sql.types import (
         BooleanType,
+        DoubleType,
         FloatType,
         StringType,
         StructField,
@@ -21,7 +22,7 @@ QC_AUDIT_COLUMN_DEFS = [
     ("qc_corrected_column", "string"),
     ("qc_original_value", "string"),
     ("qc_corrected_value", "string"),
-    ("qc_confidence_score", "float"),
+    ("qc_confidence_score", "double"),
     ("qc_correction_method", "string"),
     ("qc_support_level", "string"),    # L1 | L2
     ("qc_run_id", "string"),
@@ -46,7 +47,7 @@ QC_AUDIT_LOG_SCHEMA_DEF = [
     ("check_type", "string", False),
     ("original_value", "string", True),
     ("corrected_value", "string", True),
-    ("confidence_score", "float", True),
+    ("confidence_score", "double", True),
     ("support_level", "string", True),
     ("was_applied", "boolean", True),
     ("correction_method", "string", True),
@@ -59,6 +60,7 @@ if SPARK_AVAILABLE:
     _TYPE_MAP = {
         "string": StringType(),
         "float": FloatType(),
+        "double": DoubleType(),
         "boolean": BooleanType(),
         "timestamp": TimestampType(),
     }
