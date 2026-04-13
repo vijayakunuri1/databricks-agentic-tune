@@ -38,6 +38,13 @@ mode         = dbutils.widgets.get("mode")
 mcp_url      = dbutils.widgets.get("mcp_server_url")
 
 # COMMAND ----------
+# Ensure schemas exist when this notebook runs standalone
+# (the pipeline may write QC audit data to the default qc_schema).
+from configs.settings import get_config as _get_cfg
+_qc_schema = _get_cfg().tables.schema
+spark.sql(f"CREATE SCHEMA IF NOT EXISTS {catalog}.{_qc_schema}")
+
+# COMMAND ----------
 # MAGIC %md ### Load GeoNames Index
 
 # COMMAND ----------
