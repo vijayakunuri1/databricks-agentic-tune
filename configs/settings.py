@@ -52,7 +52,7 @@ class ThresholdConfig:
 
 @dataclass
 class TableConfig:
-    catalog: str = field(default_factory=lambda: os.getenv("QC_CATALOG", "main"))
+    catalog: str = field(default_factory=lambda: os.getenv("QC_CATALOG", "workspace"))
     schema: str = field(default_factory=lambda: os.getenv("QC_SCHEMA", "qc_schema"))
     audit_log_table: str = field(default_factory=lambda: os.getenv("QC_LOG_TABLE", "qc_audit_log"))
     geocode_cache_table: str = field(
