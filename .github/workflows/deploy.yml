@@ -20,7 +20,6 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 env:
   DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
@@ -58,7 +57,14 @@ jobs:
         uses: databricks/setup-cli@main
 
       - name: Validate Databricks bundle
+        if: env.DATABRICKS_HOST != '' && env.DATABRICKS_TOKEN != ''
         run: databricks bundle validate
+
+      - name: Skip bundle validation (no credentials)
+        if: env.DATABRICKS_HOST == '' || env.DATABRICKS_TOKEN == ''
+        run: |
+          echo "::warning::Skipping Databricks bundle validation — DATABRICKS_HOST and/or DATABRICKS_TOKEN secrets are not configured."
+          echo "To enable validation, add these secrets in Settings → Secrets and variables → Actions."
 
   deploy-dev:
     name: Deploy to Dev
@@ -67,6 +73,14 @@ jobs:
     runs-on: ubuntu-latest
     environment: dev
     steps:
+      - name: Check Databricks credentials
+        run: |
+          if [ -z "$DATABRICKS_HOST" ] || [ -z "$DATABRICKS_TOKEN" ]; then
+            echo "::error::DATABRICKS_HOST and DATABRICKS_TOKEN secrets must be configured for deployment."
+            echo "Go to Settings → Secrets and variables → Actions to add them."
+            exit 1
+          fi
+
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -89,6 +103,14 @@ jobs:
     runs-on: ubuntu-latest
     environment: prod
     steps:
+      - name: Check Databricks credentials
+        run: |
+          if [ -z "$DATABRICKS_HOST" ] || [ -z "$DATABRICKS_TOKEN" ]; then
+            echo "::error::DATABRICKS_HOST and DATABRICKS_TOKEN secrets must be configured for deployment."
+            echo "Go to Settings → Secrets and variables → Actions to add them."
+            exit 1
+          fi
+
       - name: Checkout code
         uses: actions/checkout@v4
 
