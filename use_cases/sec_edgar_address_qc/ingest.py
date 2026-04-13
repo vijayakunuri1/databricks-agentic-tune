@@ -28,7 +28,7 @@ def ingest_geonames(cache_path: str, spark=None, delta_table: str | None = None)
     if spark and delta_table:
         logger.info("Writing GeoNames to Delta: %s", delta_table)
         sdf = spark.createDataFrame(index._df)
-        sdf.write.format("delta").mode("overwrite").saveAsTable(delta_table)
+        sdf.write.format("delta").mode("overwrite").option("overwriteSchema", "true").saveAsTable(delta_table)
         logger.info("GeoNames written to %s (%d rows)", delta_table, len(index._df))
 
     return index
@@ -61,7 +61,7 @@ def ingest_sec_edgar(
         spark.sql(f"CREATE SCHEMA IF NOT EXISTS {catalog}.{schema}")
         logger.info("Writing SEC EDGAR data to Delta: %s", delta_table)
         sdf = spark.createDataFrame(df.astype(str).fillna(""))
-        sdf.write.format("delta").mode("overwrite").saveAsTable(delta_table)
+        sdf.write.format("delta").mode("overwrite").option("overwriteSchema", "true").saveAsTable(delta_table)
         logger.info("SEC EDGAR written to %s", delta_table)
 
     return df
