@@ -4,7 +4,7 @@ delta-spark>=3.2.0
 databricks-sdk>=0.28.0
 
 # LLM
-anthropic>=0.40.0
+openai>=1.30.0
 
 # QC / Fuzzy Matching
 rapidfuzz>=3.9.0
