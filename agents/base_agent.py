@@ -5,7 +5,7 @@ import logging
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
-from configs.settings import AppConfig, is_databricks
+from configs.settings import AppConfig
 from messaging.message_bus import MessageBus
 from schemas.messages import AgentMessage, AgentType, MessageType
 
@@ -38,12 +38,8 @@ class BaseAgent(ABC):
         self.config = config
         self.bus = message_bus
         self.spark = spark
-        if is_databricks():
-            from llm.databricks_client import DatabricksLLMClient
-            self.llm = DatabricksLLMClient(config.databricks_llm)
-        else:
-            from llm.claude_client import ClaudeClient
-            self.llm = ClaudeClient(config.claude)
+        from llm.databricks_client import DatabricksLLMClient
+        self.llm = DatabricksLLMClient(config.databricks_llm)
         self.logger = logging.getLogger(f"agent.{agent_type}")
 
         # Register this agent with the bus

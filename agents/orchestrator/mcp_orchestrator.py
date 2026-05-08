@@ -1,27 +1,15 @@
 """
 MCP-enabled Orchestrator Agent.
 
-Instead of hard-wiring agent calls in Python, this variant lets Claude
-drive the QC workflow dynamically via MCP tools. Claude decides which
-checks to run, interprets results, and calls approve/reject tools.
+Lets the LLM drive the QC workflow dynamically via tool-use. The LLM decides
+which checks to run, interprets results, and calls approve/reject tools.
+Uses Databricks Model Serving (OpenAI-compatible) exclusively.
 
-Two modes:
-  1. TOOL_USE  — Claude calls your registered Python functions as tools
-                 (no external server needed; works anywhere)
-  2. MCP_SERVER — Claude connects to the running mcp_server.server
-                  via Anthropic's beta MCP client API
-
-Usage (tool-use mode, simplest):
+Usage:
     from agents.orchestrator.mcp_orchestrator import MCPOrchestratorAgent
     agent = MCPOrchestratorAgent(config=cfg, message_bus=bus, spark=spark)
     result = agent.run_interactive_session(
         user_request="Run QC on the SEC EDGAR companies table and fix any address typos."
-    )
-
-Usage (MCP server mode):
-    result = agent.run_with_mcp_server(
-        mcp_server_url="http://localhost:8000/mcp",
-        user_request="..."
     )
 """
 from __future__ import annotations
@@ -31,7 +19,7 @@ import logging
 from typing import Any
 
 from agents.orchestrator.orchestrator_agent import OrchestratorAgent
-from configs.settings import AppConfig, is_databricks
+from configs.settings import AppConfig
 from messaging.message_bus import MessageBus
 
 logger = logging.getLogger(__name__)
@@ -59,8 +47,7 @@ Always explain your reasoning before calling each tool.
 class MCPOrchestratorAgent(OrchestratorAgent):
     """
     MCP-enabled orchestrator. Wraps OrchestratorAgent and adds two methods:
-    - run_interactive_session(): uses Claude tool-use with Python functions as tools
-    - run_with_mcp_server(): uses Anthropic beta MCP client pointed at a running server
+    - run_interactive_session(): tool-use loop via Databricks Model Serving (OpenAI-compatible)
     """
 
     def __init__(
@@ -84,18 +71,9 @@ class MCPOrchestratorAgent(OrchestratorAgent):
             spark=spark,
         )
         self.geonames = geonames_index
-        # Use Databricks Model Serving (OpenAI-compatible) on Databricks,
-        # fall back to Anthropic SDK locally.
-        if is_databricks():
-            from llm.databricks_client import DatabricksLLMClient
-            self._llm_client = DatabricksLLMClient(config.databricks_llm)
-            self._model = config.databricks_llm.model
-            self._use_openai_api = True
-        else:
-            import anthropic
-            self._anthropic_client = anthropic.Anthropic(api_key=config.claude.api_key)
-            self._model = config.claude.model
-            self._use_openai_api = False
+        from llm.databricks_client import DatabricksLLMClient
+        self._llm_client = DatabricksLLMClient(config.databricks_llm)
+        self._model = config.databricks_llm.model
 
     # ──────────────────────────────────────────────────────────────
     # Mode 1: Tool-use (Claude calls Python callables directly)
@@ -119,10 +97,7 @@ class MCPOrchestratorAgent(OrchestratorAgent):
         Returns:
             dict with {"final_answer": str, "tool_calls": list, "run_results": dict}
         """
-        if self._use_openai_api:
-            return self._run_interactive_openai(user_request, tables or [], max_iterations)
-        else:
-            return self._run_interactive_anthropic(user_request, tables or [], max_iterations)
+        return self._run_interactive_openai(user_request, tables or [], max_iterations)
 
     def _run_interactive_openai(
         self, user_request: str, tables: list[dict], max_iterations: int
@@ -170,47 +145,6 @@ class MCPOrchestratorAgent(OrchestratorAgent):
                     "tool_call_id": tc.id,
                     "content": result_str,
                 })
-
-        return {"final_answer": "Max iterations reached.", "tool_calls": tool_call_log, "iterations": max_iterations}
-
-    def _run_interactive_anthropic(
-        self, user_request: str, tables: list[dict], max_iterations: int
-    ) -> dict:
-        """Tool-use loop using the Anthropic SDK (local only)."""
-        tools = self._build_tool_definitions(tables)
-        messages = [{"role": "user", "content": user_request}]
-        tool_call_log = []
-
-        for iteration in range(max_iterations):
-            logger.info("MCP orchestrator loop iteration %d/%d", iteration + 1, max_iterations)
-
-            response = self._anthropic_client.messages.create(
-                model=self._model,
-                max_tokens=4096,
-                system=_SYSTEM_PROMPT,
-                tools=tools,
-                messages=messages,
-            )
-
-            text_blocks = [b.text for b in response.content if b.type == "text"]
-            tool_use_blocks = [b for b in response.content if b.type == "tool_use"]
-
-            if response.stop_reason == "end_turn" or not tool_use_blocks:
-                return {
-                    "final_answer": " ".join(text_blocks),
-                    "tool_calls": tool_call_log,
-                    "iterations": iteration + 1,
-                }
-
-            tool_results = []
-            for tu in tool_use_blocks:
-                logger.info("Claude calling tool: %s(%s)", tu.name, list(tu.input.keys()))
-                result_str = self._execute_tool(tu.name, tu.input)
-                tool_call_log.append({"tool": tu.name, "input": tu.input, "result": result_str})
-                tool_results.append({"type": "tool_result", "tool_use_id": tu.id, "content": result_str})
-
-            messages.append({"role": "assistant", "content": response.content})
-            messages.append({"role": "user", "content": tool_results})
 
         return {"final_answer": "Max iterations reached.", "tool_calls": tool_call_log, "iterations": max_iterations}
 
@@ -356,39 +290,6 @@ class MCPOrchestratorAgent(OrchestratorAgent):
         except Exception as exc:
             logger.error("Tool %s failed: %s", tool_name, exc, exc_info=True)
             return json.dumps({"error": str(exc)})
-
-    # ──────────────────────────────────────────────────────────────
-    # Mode 2: MCP Server (Anthropic beta mcp-client)
-    # ──────────────────────────────────────────────────────────────
-
-    def run_with_mcp_server(
-        self,
-        mcp_server_url: str,
-        user_request: str,
-        databricks_token: str | None = None,
-        max_tokens: int = 4096,
-    ) -> str:
-        """MCP server mode — requires Anthropic SDK (local only)."""
-        if self._use_openai_api:
-            raise NotImplementedError(
-                "MCP server mode uses Anthropic's beta mcp-client API which isn't available "
-                "via Databricks Model Serving. Use tool_use mode instead (mode=tool_use)."
-            )
-
-        mcp_server_config: dict = {"type": "url", "url": mcp_server_url, "name": "databricks-qc"}
-        if databricks_token:
-            mcp_server_config["authorization_token"] = databricks_token
-
-        response = self._anthropic_client.beta.messages.create(
-            model=self._model,
-            max_tokens=max_tokens,
-            system=_SYSTEM_PROMPT,
-            mcp_servers=[mcp_server_config],
-            messages=[{"role": "user", "content": user_request}],
-            betas=["mcp-client-2025-04-04"],
-        )
-
-        return "".join(b.text for b in response.content if hasattr(b, "text"))
 
     def _build_openai_tool_definitions(self, tables: list[dict]) -> list[dict]:
         """Convert tool definitions to OpenAI function-calling format."""

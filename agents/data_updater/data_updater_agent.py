@@ -78,8 +78,7 @@ class DataUpdaterAgent(BaseAgent):
         all_corrections = l1_corrections + l2_corrections
 
         # Generate LLM rationale for corrections
-        if self.config.claude.enable_rationale and self.config.claude.api_key:
-            all_corrections = self._enrich_rationale(all_corrections)
+        all_corrections = self._enrich_rationale(all_corrections)
 
         # Write to Delta
         if self.delta_writer and table_fqn and not dry_run:

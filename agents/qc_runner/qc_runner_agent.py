@@ -172,7 +172,7 @@ class QCRunnerAgent(BaseAgent):
 
     def _enrich_with_llm(self, issues: list[QCIssue]) -> list[QCIssue]:
         """Use Claude to verify ambiguous geo issues and assign severity."""
-        if not issues or not self.config.claude.api_key:
+        if not issues:
             return issues
 
         # Only send geo and format issues to LLM (nulls and dupes are deterministic)

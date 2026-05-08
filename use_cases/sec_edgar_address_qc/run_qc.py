@@ -115,11 +115,11 @@ def run_mcp_server_mode(mcp_url: str, user_request: str | None = None):
         "Apply L1 corrections automatically and provide a summary of L2 items needing review."
     )
 
-    logger.info("Connecting to MCP server at %s...", mcp_url)
-    answer = orchestrator.run_with_mcp_server(mcp_server_url=mcp_url, user_request=request)
+    result = orchestrator.run_interactive_session(user_request=request)
+    answer = result.get("final_answer", "")
 
     print("\n" + "=" * 60)
-    print("Claude's Analysis (via MCP Server)")
+    print("LLM Analysis")
     print("=" * 60)
     print(answer)
     return answer

@@ -134,14 +134,11 @@ if mode == "mcp_server":
         "Apply safe L1 corrections and summarize what needs human review."
     )
 
-    print(f"Connecting to MCP server at {mcp_url}...")
-    answer = orchestrator.run_with_mcp_server(
-        mcp_server_url=mcp_url,
-        user_request=USER_REQUEST,
-    )
+    result = orchestrator.run_interactive_session(user_request=USER_REQUEST)
+    answer = result.get("final_answer", "")
 
     print("\n" + "=" * 70)
-    print("CLAUDE'S ANALYSIS (via MCP Server)")
+    print("LLM ANALYSIS")
     print("=" * 70)
     print(answer)
 

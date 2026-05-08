@@ -48,9 +48,8 @@ def _validate_reviewer(value: str) -> str:
 
 
 def _sanitize_manual_value(value: str) -> str:
-    """Truncate and escape characters that cannot appear in a Spark SQL literal."""
-    safe = value.replace("\\", "").replace("'", "\\'").replace("\x00", "")
-    return safe[:_MAX_VALUE_LEN]
+    """Strip control characters and truncate. Value is passed via F.lit(), not interpolated."""
+    return value.replace("\x00", "").replace("\n", " ").replace("\r", "")[:_MAX_VALUE_LEN]
 
 
 def register_review_tools(mcp) -> None:
@@ -248,12 +247,13 @@ def register_review_tools(mcp) -> None:
             # This prevents a caller from writing decisions to arbitrary rows that were
             # never flagged for review, even within a registered table.
             pk_col = cfg.get("primary_key", "id")
+            from pyspark.sql import functions as F
             ownership_check = (
                 spark.table(table_fqn)
                 .filter(
-                    f"`{pk_col}` = '{record_id}' "
-                    "AND qc_support_level = 'L2' "
-                    "AND (qc_human_reviewed IS NULL OR qc_human_reviewed = false)"
+                    (F.col(pk_col) == record_id)
+                    & (F.col("qc_support_level") == "L2")
+                    & (F.col("qc_human_reviewed").isNull() | (F.col("qc_human_reviewed") == False))
                 )
                 .limit(1)
             )
@@ -274,24 +274,20 @@ def register_review_tools(mcp) -> None:
             dt = DeltaTable.forName(spark, table_fqn)
             now_str = datetime.now(timezone.utc).isoformat()
 
-            # record_id has been validated against _RECORD_ID_RE (alphanumeric/hyphen/dot only)
-            # so it is safe to interpolate into the condition string.
-            condition = f"`{pk_col}` = '{record_id}'"
-
             set_clause: dict = {
-                "qc_human_reviewed":    "true",
-                "qc_human_decision":    f"'{decision}'",
-                "qc_human_reviewed_at": f"'{now_str}'",
-                "qc_human_reviewer":    f"'{reviewer}'",
+                "qc_human_reviewed":    F.lit(True),
+                "qc_human_decision":    F.lit(decision),
+                "qc_human_reviewed_at": F.lit(now_str),
+                "qc_human_reviewer":    F.lit(reviewer),
             }
 
             if decision == "ACCEPT":
-                set_clause["qc_status"] = "'AUTO_CORRECTED'"
+                set_clause["qc_status"] = F.lit("AUTO_CORRECTED")
             elif decision == "MANUAL_EDIT" and safe_manual_value:
-                set_clause["qc_corrected_value"] = f"'{safe_manual_value}'"
-                set_clause["qc_status"] = "'AUTO_CORRECTED'"
+                set_clause["qc_corrected_value"] = F.lit(safe_manual_value)
+                set_clause["qc_status"] = F.lit("AUTO_CORRECTED")
 
-            dt.update(condition=condition, set=set_clause)
+            dt.update(condition=F.col(pk_col) == record_id, set=set_clause)
             msg = f"Decision '{decision}' recorded for record {record_id} in {table_fqn}."
             logger.info(msg)
 

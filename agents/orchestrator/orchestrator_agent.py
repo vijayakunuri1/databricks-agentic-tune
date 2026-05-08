@@ -29,7 +29,7 @@ class OrchestratorAgent(BaseAgent):
     1. Create MLflow run
     2. Send QC_RUN_REQUEST → QCRunnerAgent
     3. Receive QC_RUN_COMPLETE, apply EscalationPolicy
-    4. Use Claude for borderline cases
+    4. Use LLM for borderline cases (0.75–0.85 confidence)
     5. Send CORRECTION_REQUEST → DataUpdaterAgent
     6. Receive CORRECTION_COMPLETE
     7. Log metrics to MLflow, return WorkflowResult
@@ -121,7 +121,7 @@ class OrchestratorAgent(BaseAgent):
 
         # Use LLM for borderline decisions
         borderline = [i for i in issues if self.policy.needs_llm_review(i)]
-        if borderline and self.config.claude.api_key:
+        if borderline:
             issues = self._llm_triage(issues, borderline)
 
         l1_count = sum(1 for i in issues if i.support_level == "L1")
@@ -196,29 +196,34 @@ class OrchestratorAgent(BaseAgent):
         )
 
     def _llm_triage(self, all_issues: list[QCIssue], borderline: list[QCIssue]) -> list[QCIssue]:
-        """Call Claude to decide L1/L2 for borderline-confidence issues."""
+        """Use LLM to decide L1/L2 for borderline-confidence issues."""
         try:
             prompt = build_triage_prompt(
                 [i.model_dump(include={"issue_id","check_type","column_name","original_value","suggested_value","confidence_score"}) for i in borderline],
                 borderline_only=True,
             )
-            results = json.loads(
+            raw = json.loads(
                 self.llm.complete(self.get_system_prompt(), prompt, force_json=True)
             )
-            if isinstance(results, list):
-                overrides = {r["issue_id"]: r["support_level"] for r in results}
-                for issue in all_issues:
-                    if issue.issue_id in overrides:
-                        new_level = overrides[issue.issue_id]
-                        if new_level in ("L1", "L2", "skip"):
-                            issue.support_level = new_level
+            if not isinstance(raw, list):
+                self.logger.warning("LLM triage returned non-list, ignoring: %r", type(raw))
+                return all_issues
+            overrides: dict[str, str] = {}
+            for item in raw:
+                if not isinstance(item, dict):
+                    continue
+                iid = item.get("issue_id")
+                level = item.get("support_level")
+                if isinstance(iid, str) and isinstance(level, str) and level in ("L1", "L2", "skip"):
+                    overrides[iid] = level
+            for issue in all_issues:
+                if issue.issue_id in overrides:
+                    issue.support_level = overrides[issue.issue_id]
         except Exception as exc:
             self.logger.warning("LLM triage failed, keeping rule-based decisions: %s", exc)
         return all_issues
 
     def _generate_summary(self, qc_payload: dict, upd_payload: dict) -> str:
-        if not self.config.claude.api_key:
-            return ""
         try:
             stats = {
                 "total_records": qc_payload.get("total_records"),
@@ -231,7 +236,10 @@ class OrchestratorAgent(BaseAgent):
             result = json.loads(
                 self.llm.complete(self.get_system_prompt(), build_summary_prompt(stats), force_json=True)
             )
-            return result.get("summary", "")
+            if not isinstance(result, dict):
+                return ""
+            summary = result.get("summary", "")
+            return summary if isinstance(summary, str) else ""
         except Exception as exc:
             self.logger.warning("Summary generation failed: %s", exc)
             return ""

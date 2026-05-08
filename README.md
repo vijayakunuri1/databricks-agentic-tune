@@ -8,7 +8,7 @@ A 3-agent AI system for automated data quality control on Databricks Delta Lake 
 ┌─────────────────────────────────────────────────────────────────┐
 │                     ORCHESTRATOR AGENT                          │
 │  • Coordinates full L1/L2 support workflow                      │
-│  • Uses Claude for borderline escalation decisions (0.75-0.85)  │
+│  • Uses Databricks LLM for borderline escalation (0.75-0.85)   │
 │  • Logs all metrics to Databricks MLflow                        │
 └──────────────┬────────────────────────────┬────────────────────┘
                │ QC_RUN_REQUEST             │ CORRECTION_REQUEST
@@ -21,7 +21,7 @@ A 3-agent AI system for automated data quality control on Databricks Delta Lake 
 │  • Duplicate detection   │  │  • L2: flag for human review       │
 │  • Geo/address validation│  │  • Delta MERGE audit columns back  │
 │    (usaddress + Nominatim│  │  • Write to qc_audit_log table     │
-│  • Claude anomaly triage │  │  • Claude correction rationale     │
+│  • LLM anomaly triage    │  │  • LLM correction rationale        │
 └──────────────────────────┘  └────────────────────────────────────┘
 ```
 
@@ -34,6 +34,16 @@ A 3-agent AI system for automated data quality control on Databricks Delta Lake 
 | **Skip** | confidence < 0.50 | No action taken |
 
 Business-critical columns (`customer_id`, `id`, etc.) and **duplicates** always go to L2.
+
+### LLM Usage
+
+All three agents use **Databricks Model Serving** exclusively (`databricks-meta-llama-3-3-70b-instruct` by default via the OpenAI-compatible endpoint). No external LLM API keys are required — authentication uses the workspace token injected automatically by the Databricks runtime.
+
+The LLM is invoked for:
+- **Borderline triage** (0.75–0.85 confidence): decides L1 vs L2 when rules alone can't
+- **Geo/format anomaly enrichment**: verifies ambiguous issues and assigns severity
+- **Correction rationale**: explains why each L1 correction was applied
+- **Run summary**: produces a human-readable QC summary after each pipeline run
 
 ## QC Audit Columns Added to Source Table
 
@@ -76,7 +86,7 @@ databricks-agentic-tune/
 │   ├── settings.py                AppConfig (thresholds, tables, LLM)
 │   └── qc_rules.yaml              Declarative QC rules
 ├── llm/
-│   ├── claude_client.py           Anthropic SDK wrapper w/ prompt caching
+│   ├── databricks_client.py       Databricks Model Serving wrapper (OpenAI-compatible)
 │   └── prompts/                   System + user prompts per agent
 ├── messaging/
 │   └── message_bus.py             In-process agent message delivery
@@ -99,7 +109,7 @@ databricks-agentic-tune/
 
 ## Quick Start
 
-### Local (no Databricks)
+### Local (with Databricks workspace)
 
 ```bash
 # 1. Clone and install
@@ -109,7 +119,7 @@ pip install -e ".[dev]"
 
 # 2. Configure environment
 cp .env.example .env
-# Edit .env: set ANTHROPIC_API_KEY
+# Edit .env: set DATABRICKS_HOST and DATABRICKS_TOKEN
 
 # 3. Run against a local CSV
 python -m pipelines.full_qc_pipeline \
@@ -150,8 +160,18 @@ databricks bundle run data_qc_pipeline \
 ```python
 l1_auto_correct = 0.85    # >= 85% → auto-fix
 l2_review_lower = 0.50    # 50-84% → flag for human
-llm_borderline_lower = 0.75  # use Claude for 75-85% decisions
+llm_borderline_lower = 0.75  # use LLM for 75-85% decisions
 ```
+
+### LLM Model (`configs/settings.py`)
+
+The default model is `databricks-meta-llama-3-3-70b-instruct`. Override via environment variable:
+
+```bash
+DATABRICKS_LLM_MODEL=databricks-meta-llama-3-1-405b-instruct
+```
+
+Any model available on your Databricks Model Serving endpoint can be used.
 
 ### QC Rules (`configs/qc_rules.yaml`)
 
@@ -161,7 +181,9 @@ Edit to add columns, change critical column list, or add format regex rules.
 
 | Variable | Purpose |
 |----------|---------|
-| `ANTHROPIC_API_KEY` | Claude API key |
+| `DATABRICKS_HOST` | Databricks workspace URL (auto-injected on clusters) |
+| `DATABRICKS_TOKEN` | Workspace token (auto-injected on clusters) |
+| `DATABRICKS_LLM_MODEL` | Model Serving endpoint name (default: `databricks-meta-llama-3-3-70b-instruct`) |
 | `QC_ENV` | `local` or `databricks` |
 | `QC_CATALOG` | Unity Catalog catalog name |
 | `QC_SCHEMA` | Schema for QC tables |
@@ -226,7 +248,8 @@ docker run -d \
 ## Dependencies
 
 - **PySpark / Delta Lake** — data processing and storage
-- **anthropic** — Claude LLM (orchestration + triage reasoning)
+- **databricks-sdk** — Databricks Model Serving (LLM) + workspace auth
+- **openai** — OpenAI-compatible client for Databricks Model Serving
 - **rapidfuzz** — fuzzy string matching for address corrections
 - **geopy** — geocoding (Nominatim by default, free)
 - **usaddress** — US address structural parsing
