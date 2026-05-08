@@ -76,7 +76,7 @@ class MCPOrchestratorAgent(OrchestratorAgent):
         self._model = config.databricks_llm.model
 
     # ──────────────────────────────────────────────────────────────
-    # Mode 1: Tool-use (Claude calls Python callables directly)
+    # Mode 1: Tool-use (LLM calls Python callables directly)
     # ──────────────────────────────────────────────────────────────
 
     def run_interactive_session(
@@ -86,7 +86,7 @@ class MCPOrchestratorAgent(OrchestratorAgent):
         max_iterations: int = 20,
     ) -> dict:
         """
-        Let Claude autonomously drive the QC pipeline using tool-use.
+        Let the LLM autonomously drive the QC pipeline using tool-use.
 
         Args:
             user_request: Natural language instruction, e.g.
@@ -303,7 +303,7 @@ class MCPOrchestratorAgent(OrchestratorAgent):
         ]
 
     def _build_tool_definitions(self, tables: list[dict]) -> list[dict]:
-        """Build Anthropic tool definitions for tool-use mode."""
+        """Convert tool definitions to OpenAI function-calling format."""
         return [
             {
                 "name": "list_qc_tables",

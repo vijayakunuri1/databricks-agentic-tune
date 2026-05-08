@@ -5,10 +5,10 @@ Three modes:
   1. Standard pipeline (classic 3-agent, no MCP)
      python -m use_cases.sec_edgar_address_qc.run_qc
 
-  2. MCP tool-use (Claude drives the pipeline as tools, no server needed)
+  2. MCP tool-use (LLM drives the pipeline as tools, no server needed)
      python -m use_cases.sec_edgar_address_qc.run_qc --mode mcp-tools
 
-  3. MCP server mode (Claude connects to running mcp_server.server)
+  3. MCP server mode (LLM connects to running mcp_server.server)
      uvicorn mcp_server.server:app --port 8000 &
      python -m use_cases.sec_edgar_address_qc.run_qc --mode mcp-server --mcp-url http://localhost:8000/mcp
 """
@@ -65,13 +65,13 @@ def run_standard_pipeline(dry_run: bool = False):
 
 
 def run_mcp_tool_use(user_request: str | None = None):
-    """Mode 2: Claude drives via tool-use, no MCP server required."""
+    """Mode 2: LLM drives via tool-use, no MCP server required."""
     from agents.orchestrator.mcp_orchestrator import MCPOrchestratorAgent
     from mcp_server.pipeline_state import register_table
 
     geonames = load_geonames()
 
-    # Register the SEC EDGAR table for Claude to discover
+    # Register the SEC EDGAR table for the LLM to discover
     register_table("local", "sec_edgar", "companies",
                    description="SEC EDGAR public company registrations with business addresses")
 
@@ -95,7 +95,7 @@ def run_mcp_tool_use(user_request: str | None = None):
     )
 
     print("\n" + "=" * 60)
-    print("Claude's Analysis")
+    print("LLM Analysis")
     print("=" * 60)
     print(result["final_answer"])
     print(f"\nTotal tool calls: {len(result['tool_calls'])}, Iterations: {result['iterations']}")
@@ -103,7 +103,7 @@ def run_mcp_tool_use(user_request: str | None = None):
 
 
 def run_mcp_server_mode(mcp_url: str, user_request: str | None = None):
-    """Mode 3: Claude connects to running MCP HTTP server."""
+    """Mode 3: LLM connects to running MCP HTTP server."""
     from agents.orchestrator.mcp_orchestrator import MCPOrchestratorAgent
 
     geonames = load_geonames()
@@ -131,7 +131,7 @@ def main():
     parser.add_argument("--dry-run", action="store_true", default=True)
     parser.add_argument("--no-dry-run", dest="dry_run", action="store_false")
     parser.add_argument("--mcp-url", default="http://localhost:8000/mcp")
-    parser.add_argument("--request", default=None, help="Custom request for Claude (MCP modes)")
+    parser.add_argument("--request", default=None, help="Custom request for the LLM (MCP modes)")
     args = parser.parse_args()
 
     if args.mode == "standard":

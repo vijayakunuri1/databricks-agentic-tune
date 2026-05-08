@@ -155,7 +155,7 @@ class OrchestratorAgent(BaseAgent):
         upd_payload = upd_response.payload
         duration = time.time() - start_ts
 
-        # ── Step 4: Generate summary via Claude ───────────────────────
+        # ── Step 4: Generate summary via LLM ─────────────────────────
         summary = self._generate_summary(qc_payload, upd_payload)
         self.logger.info("Workflow summary: %s", summary)
 

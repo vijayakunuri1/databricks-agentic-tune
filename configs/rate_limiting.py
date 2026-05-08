@@ -236,7 +236,7 @@ def check_geo_lookup() -> tuple[bool, float]:
 
 def check_llm_call() -> tuple[bool, float]:
     """
-    Budget for external LLM API calls (Claude / Databricks Model Serving).
+    Budget for LLM API calls via Databricks Model Serving.
 
     Prevents runaway agent loops from exhausting token quotas.
     """

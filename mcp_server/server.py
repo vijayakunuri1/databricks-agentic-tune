@@ -1,7 +1,7 @@
 """
 Databricks QC MCP Server
 
-Exposes the QC pipeline as MCP tools so Claude can orchestrate
+Exposes the QC pipeline as MCP tools for LLM-driven orchestration
 data quality checks dynamically via the Model Context Protocol.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -27,16 +27,16 @@ based on the X-Forwarded-Proto header forwarded by the proxy.
   uvicorn mcp_server.server:app --host 127.0.0.1 --port 8000
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-LOCAL / STDIO (for Anthropic API subprocess)
+LOCAL / STDIO (stdio mode, no auth required)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   python -m mcp_server.server
 No network exposure in stdio mode; MCP_API_KEY is not required.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-CONNECTING CLAUDE TO THE HTTP SERVER
+CONNECTING AN LLM CLIENT TO THE HTTP SERVER
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   client.beta.messages.create(
-      model="claude-sonnet-4-6",
+      model="databricks-meta-llama-3-3-70b-instruct",
       mcp_servers=[{
           "type": "url",
           "url": "https://your-host/mcp",

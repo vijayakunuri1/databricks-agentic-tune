@@ -7,7 +7,7 @@ bundle:
 # Create the scope and populate secrets once, before deploying:
 #
 #   databricks secrets create-scope qc-secrets
-#   databricks secrets put-secret qc-secrets ANTHROPIC_API_KEY --string-value sk-ant-...
+#   (no ANTHROPIC_API_KEY needed — LLM uses Databricks Model Serving)
 #   databricks secrets put-secret qc-secrets MCP_API_KEY        --string-value $(python -c "import secrets; print(secrets.token_hex(32))")
 #
 # Grant the job service principal read access to the scope:

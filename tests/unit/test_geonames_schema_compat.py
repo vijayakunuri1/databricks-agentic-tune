@@ -189,7 +189,6 @@ class TestPipelineWithGeoNames:
     """Smoke test: the full pipeline can accept a GeonamesIndex built from raw data."""
 
     def test_pipeline_dry_run_with_raw_geonames(self, raw_geonames_df, tmp_path, mock_config):
-        mock_config.claude.api_key = ""
         idx = GeonamesIndex(raw_geonames_df)
 
         # Create a sample CSV with a known zip/state mismatch

@@ -30,7 +30,7 @@ ref_schema      = dbutils.widgets.get("reference_schema")
 company_limit   = int(dbutils.widgets.get("company_limit"))
 
 # COMMAND ----------
-# %pip install rapidfuzz geopy usaddress anthropic pydantic databricks-agentic-tune
+# %pip install rapidfuzz geopy usaddress openai pydantic databricks-agentic-tune
 
 # COMMAND ----------
 # MAGIC %md ### Step 1 — Create schemas

@@ -2,13 +2,13 @@
 # MAGIC %md
 # MAGIC ## 06 · MCP Interactive QC Session
 # MAGIC
-# MAGIC Demonstrates two MCP integration modes for letting Claude autonomously
+# MAGIC Demonstrates two MCP integration modes for letting the LLM autonomously
 # MAGIC drive the QC pipeline on SEC EDGAR data.
 # MAGIC
 # MAGIC | Mode | How it works | When to use |
 # MAGIC |------|-------------|-------------|
-# MAGIC | **Tool-Use** | Claude calls Python functions directly as tools | Local / notebook / no server needed |
-# MAGIC | **MCP Server** | Claude connects to a running HTTP MCP server | Production / Databricks Jobs |
+# MAGIC | **Tool-Use** | LLM calls Python functions directly as tools | Local / notebook / no server needed |
+# MAGIC | **MCP Server** | LLM connects to a running HTTP MCP server | Production / Databricks Jobs |
 # MAGIC
 # MAGIC **Prerequisites:** Run notebooks 04 and 05 first.
 
@@ -54,7 +54,7 @@ from mcp_server.pipeline_state import register_table, set_config
 geo_df = spark.table(f"{catalog}.{ref_schema}.us_postal_codes").toPandas()
 geonames_index = GeonamesIndex(geo_df)
 
-# Register the companies table so Claude can discover it
+# Register the companies table for the LLM to discover
 register_table(catalog, edgar_schema, "companies",
                description="SEC EDGAR public company registrations — registered business addresses")
 
@@ -68,7 +68,7 @@ set_config({
 print("GeoNames and Spark injected into MCP pipeline state.")
 
 # COMMAND ----------
-# MAGIC %md ### Mode A: Tool-Use (Claude calls Python tools directly)
+# MAGIC %md ### Mode A: Tool-Use (LLM calls Python tools directly)
 
 # COMMAND ----------
 if mode == "tool_use":
@@ -94,8 +94,9 @@ if mode == "tool_use":
     Be specific — name actual companies and address values from the data.
     """
 
-    print("Starting Claude tool-use session...")
-    print("Claude will call tools autonomously to analyze the data.\n")
+    print("Starting LLM tool-use session...")
+    print("The LLM will call tools autonomously to analyze the data.
+")
 
     result = orchestrator.run_interactive_session(
         user_request=USER_REQUEST,
@@ -104,14 +105,14 @@ if mode == "tool_use":
     )
 
     print("\n" + "=" * 70)
-    print("CLAUDE'S ANALYSIS")
+    print("LLM ANALYSIS")
     print("=" * 70)
     print(result["final_answer"])
     print(f"\nStats: {result['iterations']} iterations, {len(result['tool_calls'])} tool calls")
 
     # Show all tool calls for transparency
     print("\n" + "-" * 40)
-    print("Tools called by Claude:")
+    print("Tools called by LLM:")
     for i, tc in enumerate(result["tool_calls"], 1):
         print(f"  {i}. {tc['tool']}({list(tc['input'].keys())})")
 
@@ -151,8 +152,8 @@ if mode == "mcp_server":
 # MAGIC │               Databricks Workspace                             │
 # MAGIC │                                                                │
 # MAGIC │  ┌─────────────────┐    MCP tools     ┌──────────────────┐   │
-# MAGIC │  │  Claude (via    │ ◄──────────────► │  mcp_server/     │   │
-# MAGIC │  │  Anthropic API) │   JSON over HTTP  │  server.py       │   │
+# MAGIC │  │  LLM (via       │ ◄──────────────► │  mcp_server/     │   │
+# MAGIC │  │  Databricks MS) │   JSON over HTTP  │  server.py       │   │
 # MAGIC │  └─────────────────┘                  │  (FastMCP)       │   │
 # MAGIC │                                        └────────┬─────────┘   │
 # MAGIC │                                                 │             │

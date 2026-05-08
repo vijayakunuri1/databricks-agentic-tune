@@ -11,12 +11,11 @@ Usage
 -----
     from configs.secrets import get_secret_provider
     sp = get_secret_provider()
-    api_key = sp.require("qc-secrets", "ANTHROPIC_API_KEY")
+    api_key = sp.require("qc-secrets", "MCP_API_KEY")
 
 On Databricks the scope name defaults to "qc-secrets".  Create it once:
     databricks secrets create-scope qc-secrets
-    databricks secrets put-secret qc-secrets ANTHROPIC_API_KEY --string-value sk-ant-...
-    databricks secrets put-secret qc-secrets MCP_API_KEY        --string-value <hex>
+    databricks secrets put-secret qc-secrets MCP_API_KEY --string-value <hex>
 
 Locally set the values in .env (see .env.example).
 """
@@ -36,13 +35,12 @@ DEFAULT_SCOPE = "qc-secrets"
 # Canonical map: env-var name → (scope, key) on Databricks.
 # Used by validate_all() to check every required secret at startup.
 _SECRET_MAP: dict[str, tuple[str, str]] = {
-    "ANTHROPIC_API_KEY":  (DEFAULT_SCOPE, "ANTHROPIC_API_KEY"),
     "MCP_API_KEY":        (DEFAULT_SCOPE, "MCP_API_KEY"),
     "DATABRICKS_HOST":    (DEFAULT_SCOPE, "DATABRICKS_HOST"),
     "DATABRICKS_TOKEN":   (DEFAULT_SCOPE, "DATABRICKS_TOKEN"),
 }
 
-_LOCAL_REQUIRED = ["DATABRICKS_HOST", "DATABRICKS_TOKEN", "ANTHROPIC_API_KEY", "MCP_API_KEY"]
+_LOCAL_REQUIRED = ["DATABRICKS_HOST", "DATABRICKS_TOKEN", "MCP_API_KEY"]
 
 
 class SecretProvider:

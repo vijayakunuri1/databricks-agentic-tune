@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 class QCRunnerAgent(BaseAgent):
     """
     Executes QC checks against a DataFrame / Delta table.
-    Uses Claude to classify ambiguous issues and assign severity.
+    Uses the LLM to classify ambiguous issues and assign severity.
     """
 
     def __init__(
@@ -171,7 +171,7 @@ class QCRunnerAgent(BaseAgent):
         return all_issues
 
     def _enrich_with_llm(self, issues: list[QCIssue]) -> list[QCIssue]:
-        """Use Claude to verify ambiguous geo issues and assign severity."""
+        """Use the LLM to verify ambiguous geo issues and assign severity."""
         if not issues:
             return issues
 

@@ -1,6 +1,7 @@
 """Integration test: full pipeline run against a local CSV file.
 
-Mocks out the Anthropic API and Delta writes so no external services are needed.
+Uses stub Databricks credentials so no real cluster is needed; LLM calls
+fail gracefully via existing try/except in each agent.
 """
 from __future__ import annotations
 
@@ -14,7 +15,6 @@ def customers_csv(sample_csv_path):
 
 def test_full_pipeline_dry_run(customers_csv, mock_config):
     """Pipeline should detect issues and return a valid WorkflowResult without writing."""
-    mock_config.claude.api_key = ""   # disable LLM calls
 
     from pipelines.full_qc_pipeline import run_pipeline
 
@@ -35,7 +35,7 @@ def test_full_pipeline_dry_run(customers_csv, mock_config):
 
 
 def test_pipeline_detects_null(customers_csv, mock_config):
-    mock_config.claude.api_key = ""
+
 
     from pipelines.full_qc_pipeline import run_pipeline
 
@@ -55,7 +55,7 @@ def test_pipeline_detects_null(customers_csv, mock_config):
 
 
 def test_pipeline_detects_format_issues(customers_csv, mock_config):
-    mock_config.claude.api_key = ""
+
 
     from pipelines.full_qc_pipeline import run_pipeline
 

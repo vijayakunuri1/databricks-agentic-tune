@@ -72,27 +72,6 @@ class TableConfig:
 
 
 @dataclass
-class ClaudeConfig:
-    """Legacy: used when running locally with the Anthropic SDK."""
-    api_key: str = field(
-        default_factory=lambda: _secret("ANTHROPIC_API_KEY", "ANTHROPIC_API_KEY")
-    )
-    model: str = "claude-sonnet-4-6"
-    max_tokens: int = 1024
-    temperature: float = 0.1
-    enable_rationale: bool = True
-
-    def __repr__(self) -> str:
-        masked = f"{self.api_key[:8]}***" if len(self.api_key) > 8 else "***"
-        return (
-            f"ClaudeConfig(api_key={masked!r}, model={self.model!r}, "
-            f"max_tokens={self.max_tokens}, temperature={self.temperature})"
-        )
-
-    __str__ = __repr__
-
-
-@dataclass
 class DatabricksLLMConfig:
     """Used when running on Databricks — token is injected automatically."""
     workspace_host: str = field(
@@ -127,7 +106,6 @@ class AppConfig:
     env: str = field(default_factory=lambda: os.getenv("QC_ENV", "local"))
     thresholds: ThresholdConfig = field(default_factory=ThresholdConfig)
     tables: TableConfig = field(default_factory=TableConfig)
-    claude: ClaudeConfig = field(default_factory=ClaudeConfig)
     databricks_llm: DatabricksLLMConfig = field(default_factory=DatabricksLLMConfig)
     geocoder: str = field(default_factory=lambda: os.getenv("GEOCODER", "nominatim"))
     geocoder_user_agent: str = field(
@@ -144,9 +122,8 @@ class AppConfig:
         return is_databricks()
 
     @property
-    def llm_config(self) -> DatabricksLLMConfig | ClaudeConfig:
-        """Return the right LLM config for the current runtime."""
-        return self.databricks_llm if is_databricks() else self.claude
+    def llm_config(self) -> DatabricksLLMConfig:
+        return self.databricks_llm
 
 
 _config: AppConfig | None = None

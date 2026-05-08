@@ -8,7 +8,8 @@ import pandas as pd
 # Point MLflow at a local temp dir so tests don't need Databricks
 os.environ.setdefault("MLFLOW_TRACKING_URI", "./mlruns_test")
 os.environ.setdefault("QC_ENV", "local")
-os.environ.setdefault("ANTHROPIC_API_KEY", "test-key")
+os.environ.setdefault("DATABRICKS_HOST", "https://test.azuredatabricks.net")
+os.environ.setdefault("DATABRICKS_TOKEN", "test-dapi-token")
 
 
 @pytest.fixture(scope="session")
