@@ -95,8 +95,7 @@ if mode == "tool_use":
     """
 
     print("Starting LLM tool-use session...")
-    print("The LLM will call tools autonomously to analyze the data.
-")
+    print("The LLM will call tools autonomously to analyze the data.\n")
 
     result = orchestrator.run_interactive_session(
         user_request=USER_REQUEST,
