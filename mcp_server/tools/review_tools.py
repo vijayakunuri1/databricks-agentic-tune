@@ -253,7 +253,7 @@ def register_review_tools(mcp) -> None:
                 .filter(
                     (F.col(pk_col) == record_id)
                     & (F.col("qc_support_level") == "L2")
-                    & (F.col("qc_human_reviewed").isNull() | (F.col("qc_human_reviewed") == False))
+                    & (F.col("qc_human_reviewed").isNull() | ~F.col("qc_human_reviewed"))
                 )
                 .limit(1)
             )
