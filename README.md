@@ -84,10 +84,17 @@ databricks-agentic-tune/
 │       └── delta_writer.py        Delta MERGE + audit log
 ├── configs/
 │   ├── settings.py                AppConfig (thresholds, tables, LLM)
-│   └── qc_rules.yaml              Declarative QC rules
+│   ├── qc_rules.yaml              Declarative QC rules
+│   ├── input_validation.py       Input sanitisation for MCP tool args
+│   ├── rate_limiting.py          Token-bucket limiter for the MCP server
+│   ├── secrets.py                SecretProvider (Databricks Secrets API)
+│   └── security_logging.py       Redacting audit logger
 ├── llm/
 │   ├── databricks_client.py       Databricks Model Serving wrapper (OpenAI-compatible)
 │   └── prompts/                   System + user prompts per agent
+│       ├── orchestrator_prompts.py
+│       ├── qc_runner_prompts.py
+│       └── updater_prompts.py
 ├── messaging/
 │   └── message_bus.py             In-process agent message delivery
 ├── schemas/
@@ -96,15 +103,34 @@ databricks-agentic-tune/
 │   └── delta_tables.py            Delta table column definitions
 ├── pipelines/
 │   └── full_qc_pipeline.py        Main entry point (CLI + importable)
+├── data_ingestion/
+│   ├── sec_edgar_fetcher.py       Pulls company data from the SEC EDGAR API
+│   └── geonames_fetcher.py        Pulls GeoNames reference data (city/state/zip)
+├── use_cases/
+│   └── sec_edgar_address_qc/      End-to-end example: ingest + QC SEC EDGAR addresses
+│       ├── ingest.py
+│       ├── run_qc.py
+│       └── config.yaml
+├── mcp_server/
+│   ├── server.py                  FastMCP server exposing QC tools over MCP
+│   ├── pipeline_state.py          Shared run state for interactive sessions
+│   └── tools/                     geo_tools, review_tools, table_tools
 ├── notebooks/
 │   ├── 01_setup_tables.py         Create Delta tables (run once)
 │   ├── 02_run_qc_pipeline.py      Interactive pipeline run
-│   └── 03_review_l2_flags.py      Human L2 review workflow
+│   ├── 03_review_l2_flags.py      Human L2 review workflow
+│   ├── 04_ingest_public_data.py   Load SEC EDGAR + GeoNames into Delta
+│   ├── 05_sec_edgar_qc.py         Run the QC pipeline on SEC EDGAR companies
+│   ├── 06_mcp_interactive_qc.py   Drive QC through the MCP server (tool use)
+│   └── 07_agent_validation.py     Validate agent outputs against expectations
 ├── tests/
 │   ├── conftest.py                Shared fixtures (sample DataFrame)
-│   ├── unit/                      No Spark needed
-│   └── integration/               Full pipeline, local CSV
-└── databricks.yml                 Databricks Asset Bundle config
+│   ├── unit/                      6 modules — checks, policy, matcher, schema (no Spark)
+│   └── integration/               Full pipeline on a local CSV
+├── deploy/start_server.sh         Entry point for the containerised MCP server
+├── Dockerfile                     MCP server image
+├── .github/workflows/deploy.yml   Lint + unit tests + bundle validate/deploy
+└── databricks.yml                 Databricks Asset Bundle (jobs, schedule, env)
 ```
 
 ## Quick Start
